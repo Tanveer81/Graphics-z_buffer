@@ -1,0 +1,29 @@
+# depslib dependency file v1.0
+1529947396 source:e:\l-4 t-2\graphics sessional\offline 3\offline\offline3\main.cpp
+	<bits/stdc++.h>
+	"bitmap_image.hpp"
+
+1526315054 e:\l-4 t-2\graphics sessional\offline 3\offline\offline3\bitmap_image.hpp
+	<algorithm>
+	<cmath>
+	<cstdlib>
+	<fstream>
+	<iostream>
+	<iterator>
+	<limits>
+	<string>
+
+1530033263 source:e:\l-4 t-2\graphics sessional\offline 3\code\main.cpp
+	<bits/stdc++.h>
+	"bitmap_image.hpp"
+
+1526315054 e:\l-4 t-2\graphics sessional\offline 3\code\bitmap_image.hpp
+	<algorithm>
+	<cmath>
+	<cstdlib>
+	<fstream>
+	<iostream>
+	<iterator>
+	<limits>
+	<string>
+
