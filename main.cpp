@@ -232,7 +232,6 @@ int main()
     }
 
     ///output file
-
     ofstream out("z_buffer.txt");
     out.precision(6);
 
