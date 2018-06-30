@@ -26,7 +26,6 @@ public:
 
 
 
-
 class Plane{
 
 public:
@@ -51,7 +50,7 @@ public:
 
     int id;
 
-    int in = 0;
+    bool in = false;
 
     Plane plane;
 
@@ -67,7 +66,9 @@ class edge{
 
 public:
 
-    double delx, id, ymin, ymax, xatymin;
+    double delx, ymin, ymax, xatymin, xa;
+
+    int id;
 
 //    int disymin, disymax, disxatymin;
 
@@ -125,8 +126,11 @@ void readLine(double a[] , ifstream* myfile){
 
 
       for(int i = 0; i < tokens.size(); i++){
+
          a[i] = atof(tokens[i].c_str());
+
         }
+
     }
 
     else cout << "Unable to open file";
@@ -160,6 +164,8 @@ void create_edge(point a, point b, edge* e){
 
     e->xatymin = a.y<b.y? a.x : b.x;
     //e->disxatymin = round((e->xatymin - left_x) / dx);
+
+    e->xa = e->xatymin;
 
 
     e->ymax = a.y>b.y? a.y : b.y;
@@ -209,7 +215,9 @@ int number_of_triangles = 0;
 
 
 
-
+bool cmp (edge a, edge b){
+    return a.xatymin < b.xatymin;
+}
 
 
 
@@ -315,6 +323,10 @@ int main()
         ///2.a. Creating EDGE TABLE
         edge e1, e2, e3;
 
+        e1.id = t.id;
+        e2.id = t.id;
+        e3.id = t.id;
+
         if(t.points[0].y != t.points[1].y){
 
             create_edge(t.points[0], t.points[1], &e1);
@@ -355,12 +367,13 @@ int main()
 
     for(int i=0; i<screen_height; i++){
 
-        std::sort(edge_table[i].begin(),
-              edge_table[i].end(),
-              [](const edge& first, const edge& second)
-        {
-        return first.xatymin < second.xatymin;
-        });
+//        std::sort(edge_table[i].begin(),
+//              edge_table[i].end(),
+//              [](const edge& first, const edge& second)
+//        {
+//        return first.xatymin < second.xatymin;
+//        });
+          sort(edge_table[i].begin(), edge_table[i].end(),cmp);
 
     }
 
@@ -374,8 +387,8 @@ int main()
             cout<<i<<"--- ";
 
             for(int j=0; j<edge_table[i].size(); j++){
-
-                cout<<edge_table[i].at(j).xatymin<<", ";
+                cout<<"xatymin   ymax\n";
+                cout<<edge_table[i].at(j).xatymin<<", "<<edge_table[i].at(j).ymax<<"\n";
 
             }
             cout<<endl;
@@ -409,13 +422,44 @@ int main()
     }
 
 
+    ///create frame buffer
+
+    frame_buffer = new point* [screen_width];
+
+    point c;
+
+    c.x = 0;
+
+    c.y = 0;
+
+    c.z = 0;
+
+    for(int i= 0 ; i< screen_width ; i++){
+
+        frame_buffer[i] = new point[screen_height];
+
+        for(int j = 0 ; j < screen_height ; j++){
+
+              frame_buffer[i][j] = c;
+
+        }
+
+    }
+
+
+
 
 
     ///3. apply_procedure():-
 
-    for(double y = 0; y<screen_height; y++){\
+    cout<<"Debug   "<<edge_table[0].size();
 
-        cout<<y<<"--- ";
+    for(int y = 0; y<screen_height; y++){
+
+        //cout<<y<<"--- \n";
+
+        double contY = top_y- y*dy;
+
 
         if(edge_table[y].size() != 0){
 
@@ -423,7 +467,7 @@ int main()
 
                 int polygon_id = edge_table[y].at(j).id;
 
-                triangles[polygon_id].in = 1;
+                ///triangles[polygon_id].in = 1;
 
                 apt.push_back(triangles[polygon_id].id);
 
@@ -431,23 +475,163 @@ int main()
             }
         }
 
+//        if(aet.size() != 0){
+//            for(int j=0; j<aet.size()-1; j++){
+//
+//                cout << j << j << endl;
+//
+//                cout<<aet.at(j).xatymin<<endl;
+//
+//            }
+//        }
+
+        //cout << "aet sorting begin\n";
+
+//        std::sort(aet.begin(),
+//              aet.end(),
+//              [](const edge& first, const edge& second)
+//        {
+//        return first.xatymin < second.xatymin;
+//        });
+          sort(aet.begin(), aet.end(),cmp);
+
+
+
+        //cout << "aet sorting end\n";
+
+
         if(aet.size() != 0){
-            for(int j=0; j<aet.size(); j++){
+            for(int j=0; j<aet.size()-1; j++){
 
-                int r = round( (top_y - aet.at(j).ymax) / dy );
+                //cout << j << endl;
 
-                if( r > y ){
+                //cout<<aet.at(j).xatymin<<endl;
 
-                    int polygon_id = aet.at(j).id;
+                int polygon_id = aet.at(j).id;
 
-                    aet.erase(aet.begin() + j);
+                int t = triangles[polygon_id].in;
 
-                    apt.erase(std::remove(vec.begin(), vec.end(), polygon_id), vec.end());
+                triangles[polygon_id].in = !triangles[polygon_id].in;
 
-                    triangles[polygon_id].in = 0;
+
+                double zmin = INT_MAX;
+
+                int triangle_id = -1;
+
+                for(int i=0; i<triangles.size(); i++){
+
+                    if( triangles[i].in ==  true ){
+
+                        Plane p = triangles[i].plane;
+
+                        double z1 = (-p.d - p.a*aet.at(j).xa -p.b*contY) / p.c;
+
+                        if(zmin > z1){
+
+                            zmin = z1;
+
+                            triangle_id = i;
+
+                        }
+
+                    }
+
+                }
+
+                if(triangle_id == -1)continue;
+
+                cout<<"Y "<< y <<" selected "<<triangle_id<<" Zmin "<<zmin<<endl;
+
+            ///draw
+                double xmin = aet.at(j).xa;
+                double xmax = aet.at(j+1).xa;
+                if( xmin < xl_limit ) xmin = xl_limit;
+                if( xmax > xr_limit ) xmax = xr_limit;
+
+
+                for( double x=xmin; x<xmax; x+=dx){
+
+
+
+                    int c = round((x - left_x) / dx);
+
+                    frame_buffer[screen_height - y][c].x = triangles[triangle_id].color[0];
+                    frame_buffer[screen_height - y][c].y = triangles[triangle_id].color[1];
+                    frame_buffer[screen_height - y][c].z = triangles[triangle_id].color[2];
+
+
+                }
+
+
             }
-        }
 
+            ///draw
+
+                cout<<"aet.size()  "<<aet.size()<<endl;
+
+                for(int j=0; j<aet.size(); j++){
+
+                    int r = round( (aet.at(j).ymax - yb_limit) / dy );
+
+                    //r = screen_height - r;
+
+                    //cout<<"r "<<r<<endl;
+
+                    if( r <= y ){
+
+
+
+                        cout<< "PAISI"<<endl;
+
+                        ///int polygon_id = aet.at(j).id;
+
+                        aet.erase(aet.begin() + j);
+
+                        //apt.erase(std::remove(apt.begin(), apt.end(), polygon_id), apt.end());
+
+                        j--;
+
+                        ///triangles[polygon_id].in = 0;
+                    }
+                }
+
+                cout<<"aet.size()  "<<aet.size()<<endl;
+
+
+            if(aet.size() != 0){
+                for(int j=0; j<aet.size(); j++){
+
+                    aet.at(j).xa += (aet.at(j).delx * dy);////////
+
+        //            if( aet.at(j).xa < xl_limit ) aet.at(j).xa = xl_limit;
+        //
+        //            if( aet.at(j).xa > xr_limit ) aet.at(j).xa = xr_limit;
+
+                }
+
+
+
+
+
+//                std::sort(aet.begin(),
+//                      aet.end(),
+//                      [](const edge& first, const edge& second)
+//                {
+//                return first.xatymin < second.xatymin;
+//                });
+                  sort(aet.begin(), aet.end(),cmp);
+
+            }
+
+
+            for(int j=0; j<triangles.size(); j++){
+
+                triangles[j].in = false;
+
+            }
+
+
+        }
 
 
     }
@@ -457,45 +641,44 @@ int main()
 
 
 
-//    ///output file
+    ///output file
 
-//    ofstream out("z_buffer.txt");
+    //ofstream out("z_buffer.txt");
 
-//    out.precision(6);
-//
-//
-//    ///save image
-
-//    bitmap_image image(screen_width,screen_height);
-
-//    for(int i= 0 ; i< screen_width ; i++){
-
-//        for(int j = 0 ; j < screen_height ; j++){
-
-//            out<<fixed<<i<<", "<<j<<", "<<z_buffer[i][j]<<", "<<frame_buffer[i][j].x<<", "<<frame_buffer[i][j].y<<", "<<frame_buffer[i][j].z<<"\n";
-
-//            image.set_pixel(j,i,frame_buffer[i][j].x,frame_buffer[i][j].y,frame_buffer[i][j].z);
-
-//        }
-//    }
-//
+    //out.precision(6);
 
 
+    ///save image
 
-//    //image.save_image("output.bmp");
+    bitmap_image image(screen_width,screen_height);
 
-//    out.close();
-//
+    for(int i= 0 ; i< screen_width ; i++){
+
+        for(int j = 0 ; j < screen_height ; j++){
+
+            //out<<fixed<<i<<", "<<j<<", "<<z_buffer[i][j]<<", "<<frame_buffer[i][j].x<<", "<<frame_buffer[i][j].y<<", "<<frame_buffer[i][j].z<<"\n";
+
+            image.set_pixel(j,i,frame_buffer[i][j].x,frame_buffer[i][j].y,frame_buffer[i][j].z);
+
+        }
+
+    }
 
 
 
-//    ///free memory
 
-//    delete[] z_buffer;
+    image.save_image("output.bmp");
 
-//    delete[] frame_buffer;
+    //out.close();
 
-//    vector<triangle>().swap(triangles);
+
+
+
+    ///free memory
+
+    delete[] frame_buffer;
+
+    vector<triangle>().swap(triangles);
 
 
 
